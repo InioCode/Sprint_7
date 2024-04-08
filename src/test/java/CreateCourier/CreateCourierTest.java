@@ -1,10 +1,10 @@
 package CreateCourier;
 
 import io.qameta.allure.Description;
-import io.qameta.allure.Step;
 import io.qameta.allure.junit4.DisplayName;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
+import io.restassured.response.ValidatableResponse;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.After;
 import org.junit.Assert;
@@ -12,9 +12,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.Rule;
 import org.junit.rules.Timeout;
-
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static io.restassured.RestAssured.given;
 
@@ -33,33 +30,23 @@ public class CreateCourierTest {
         randomPassword = RandomStringUtils.random(4,true,true);
         randomName = RandomStringUtils.random(4,true,false);
 
-        //System.out.println("Login:" + randomLogin);
-        //System.out.println("Password:" + randomPassword);
-        //System.out.println("Name:" + randomName);
-
         testCourier = new CourierData(randomLogin,randomPassword, randomName);
     }
 
     @After
-    public void ending(){
-        String userId = "";
-
-        Response response = RestAssured.given()
+    public void cleanUp(){
+        ValidatableResponse response = RestAssured.given()
                     .header("Content-type", "application/json")
                     .body("{\"login\": \"" + randomLogin + "\", \"password\": \"" + randomPassword + "\"}")
                     .and()
-                    .post("/api/v1/courier/login");
+                    .post("/api/v1/courier/login").then();
 
-        Pattern pattern = Pattern.compile("[0-9]");
-        Matcher matcher = pattern.matcher(response.asString());
-        while (matcher.find()){
-            userId +=  matcher.group();
+        if (response.extract().statusCode() == 201){
+            int userId = response.extract().jsonPath().getInt("id");
+            RestAssured.given()
+                    .delete("/api/v1/courier/" + userId);
         }
-        //System.out.println("response: " + response.asString());
-        //System.out.println("UserId: " + userId);
 
-        RestAssured.given()
-                .delete("/api/v1/courier/" + userId);
     }
 
     @Test
@@ -83,7 +70,6 @@ public class CreateCourierTest {
                 .body(testCourier)
                 .and()
                 .post("/api/v1/courier");
-
         if (response.asString().contains("\"ok\":true")){
             RestAssured.given()
                     .header("Content-type", "application/json")
@@ -134,11 +120,12 @@ public class CreateCourierTest {
     @Test
     @DisplayName("Удачное создание курьера возвращает в ответе ok:true")
     public void successCreatingReturnTrue() {
-        Response response = given()
+        ValidatableResponse response = given()
                 .header("Content-type", "application/json")
                 .body(testCourier)
                 .and()
-                .post("/api/v1/courier");
-        Assert.assertEquals("{\"ok\":true}", response.asString());
+                .post("/api/v1/courier").then();
+        boolean ok = response.extract().jsonPath().getBoolean("ok");
+        Assert.assertTrue(ok);
     }
 }

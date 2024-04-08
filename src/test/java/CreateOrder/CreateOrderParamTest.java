@@ -8,11 +8,11 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 @RunWith(Parameterized.class)
-public class CreateOrderTestParam {
+public class CreateOrderParamTest {
     private String[] color;
     private OrderData testOrder;
 
-    public CreateOrderTestParam(String[] color) {
+    public CreateOrderParamTest(String[] color) {
         this.color = color;
     }
 

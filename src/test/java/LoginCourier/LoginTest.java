@@ -1,23 +1,15 @@
 package LoginCourier;
 
-import CreateCourier.CourierData;
 import io.qameta.allure.junit4.DisplayName;
 import io.restassured.RestAssured;
-import io.restassured.response.Response;
+import io.restassured.response.ValidatableResponse;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.Rule;
 import org.junit.rules.Timeout;
 
-
-
-
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 public class LoginTest {
-    private CourierData testCourier;
     private String login;
     private String password;
     private String notExistLogin;
@@ -96,14 +88,13 @@ public class LoginTest {
     @Test
     @DisplayName("Успешный вход в теле ответа возвращает id курьера")
     public void successLoginReturnId(){
-        Response response = RestAssured.given()
+        ValidatableResponse response = RestAssured.given()
                 .header("Content-type", "application/json")
                 .body("{\"login\": \"courierTest0001\",\"password\": \"1234\"}")
                 .and()
-                .post("/api/v1/courier/login");
-        Pattern pattern = Pattern.compile(".*id.*\\d+.*");
-        Matcher matcher = pattern.matcher(response.asString());
-        Assert.assertTrue(matcher.matches());
+                .post("/api/v1/courier/login").then();
+        Integer id = response.extract().jsonPath().getInt("id");
+        Assert.assertNotNull(id);
     }
 
 }
